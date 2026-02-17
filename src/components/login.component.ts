@@ -56,7 +56,7 @@ import { StoreService } from '../services/store.service';
                </svg>
             </div>
             <h2 class="text-center text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 tracking-tight drop-shadow-sm mb-2">
-              WorshipFlow
+              ChordFlow
             </h2>
             <p class="text-center text-slate-400 text-lg">
               {{ store.t().login.tagline }}

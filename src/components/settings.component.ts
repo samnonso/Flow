@@ -315,7 +315,7 @@ import { NgClass } from '@angular/common';
                          </svg>
                       </div>
                       <h4 class="text-xl font-bold text-slate-800 mb-2">Connected!</h4>
-                      <p class="text-sm text-slate-500"><strong>{{ whatsappForm.groupName }}</strong> is now linked to WorshipFlow.</p>
+                      <p class="text-sm text-slate-500"><strong>{{ whatsappForm.groupName }}</strong> is now linked to ChordFlow.</p>
                       
                       <button (click)="finishWhatsAppSetup()" class="w-full mt-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition">
                          Done

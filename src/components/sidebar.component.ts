@@ -10,7 +10,7 @@ import { StoreService } from '../services/store.service';
   template: `
     <nav class="h-full flex flex-col bg-brand-900 text-white w-64 shadow-xl">
       <div class="p-6 border-b border-brand-800">
-        <h1 class="text-2xl font-bold tracking-tight">WorshipFlow</h1>
+        <h1 class="text-2xl font-bold tracking-tight">ChordFlow</h1>
         <p class="text-xs text-brand-200 mt-1">{{ store.t().sidebar.squadSync }}</p>
       </div>
       

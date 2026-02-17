@@ -289,7 +289,7 @@ export class AssistantComponent implements OnInit, AfterViewChecked {
 
   initChat() {
     const systemInstruction = `
-      You are 'Flow', the friendly and capable AI assistant for the WorshipFlow app. 
+      You are 'Flow', the friendly and capable AI assistant for the ChordFlow app. 
       Your goal is to help worship leaders, musicians, and admins manage their tasks.
       
       The app has these main sections you should know about:

@@ -589,6 +589,12 @@ import { ActivatedRoute, Router } from '@angular/router';
                                              @if (u.ladiesInspoImg) {
                                                 <div (click)="openImage(u.ladiesInspoImg)" class="h-20 w-16 rounded border border-slate-200 overflow-hidden relative group/img cursor-pointer shadow-sm hover:ring-2 hover:ring-pink-300 transition">
                                                    <img [src]="u.ladiesInspoImg" class="w-full h-full object-cover">
+                                                   <!-- Zoom Icon Overlay -->
+                                                   <div class="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition">
+                                                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                      </svg>
+                                                   </div>
                                                 </div>
                                              }
                                           </div>
@@ -603,6 +609,12 @@ import { ActivatedRoute, Router } from '@angular/router';
                                              @if (u.guysInspoImg) {
                                                 <div (click)="openImage(u.guysInspoImg)" class="h-20 w-16 rounded border border-slate-200 overflow-hidden relative group/img cursor-pointer shadow-sm hover:ring-2 hover:ring-blue-300 transition">
                                                    <img [src]="u.guysInspoImg" class="w-full h-full object-cover">
+                                                   <!-- Zoom Icon Overlay -->
+                                                   <div class="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition">
+                                                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                      </svg>
+                                                   </div>
                                                 </div>
                                              }
                                           </div>
@@ -659,9 +671,9 @@ import { ActivatedRoute, Router } from '@angular/router';
                                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Inspo Pic</label>
                                     <div class="flex gap-2 items-start">
                                        @if(editingUniform()!.ladiesInspoImg) {
-                                          <div class="h-20 w-16 rounded border border-slate-300 overflow-hidden relative group">
+                                          <div (click)="openImage(editingUniform()!.ladiesInspoImg)" class="h-20 w-16 rounded border border-slate-300 overflow-hidden relative group cursor-pointer">
                                              <img [src]="editingUniform()!.ladiesInspoImg" class="w-full h-full object-cover">
-                                             <button (click)="editingUniform()!.ladiesInspoImg = ''" class="absolute top-0 right-0 bg-black/50 text-white p-1 opacity-0 group-hover:opacity-100">
+                                             <button (click)="$event.stopPropagation(); editingUniform()!.ladiesInspoImg = ''" class="absolute top-0 right-0 bg-black/50 text-white p-1 opacity-0 group-hover:opacity-100">
                                                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                                              </button>
                                           </div>
@@ -682,9 +694,9 @@ import { ActivatedRoute, Router } from '@angular/router';
                                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Inspo Pic</label>
                                     <div class="flex gap-2 items-start">
                                        @if(editingUniform()!.guysInspoImg) {
-                                          <div class="h-20 w-16 rounded border border-slate-300 overflow-hidden relative group">
+                                          <div (click)="openImage(editingUniform()!.guysInspoImg)" class="h-20 w-16 rounded border border-slate-300 overflow-hidden relative group cursor-pointer">
                                              <img [src]="editingUniform()!.guysInspoImg" class="w-full h-full object-cover">
-                                             <button (click)="editingUniform()!.guysInspoImg = ''" class="absolute top-0 right-0 bg-black/50 text-white p-1 opacity-0 group-hover:opacity-100">
+                                             <button (click)="$event.stopPropagation(); editingUniform()!.guysInspoImg = ''" class="absolute top-0 right-0 bg-black/50 text-white p-1 opacity-0 group-hover:opacity-100">
                                                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                                              </button>
                                           </div>

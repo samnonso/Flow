@@ -3,8 +3,8 @@ import { Component, inject, signal, computed, OnInit, OnDestroy, effect, ViewChi
 import { StoreService, Song } from '../services/store.service';
 import { GeminiService } from '../services/gemini.service';
 import { FormsModule } from '@angular/forms';
-import { DatePipe, NgClass, NgStyle } from '@angular/common';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DatePipe, NgClass, NgStyle, DecimalPipe } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl, SafeHtml } from '@angular/platform-browser';
 
 // --- Types ---
 interface StemTrack {
@@ -39,7 +39,7 @@ interface SequencerRow {
 
 @Component({
   selector: 'app-musicians-corner',
-  imports: [FormsModule, DatePipe, NgClass, NgStyle],
+  imports: [FormsModule, DatePipe, NgClass, NgStyle, DecimalPipe],
   template: `
     <div class="h-full flex flex-col bg-slate-950 text-slate-200 font-sans relative overflow-hidden transition-colors duration-500 selection:bg-cyan-500/30 selection:text-cyan-100">
       
@@ -55,7 +55,7 @@ interface SequencerRow {
            }
            <div>
              <h1 class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-violet-400 text-xl tracking-tight">
-               Studio <span class="hidden md:inline font-mono text-xs text-slate-500 ml-2 tracking-widest uppercase">Nonso's Beat Lab</span>
+               Studio <span class="hidden md:inline font-mono text-xs text-slate-500 ml-2 tracking-widest uppercase">The Lab</span>
              </h1>
            </div>
         </div>
@@ -81,15 +81,58 @@ interface SequencerRow {
                 </div>
              </div>
 
-             <button class="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-lg shadow-violet-900/50 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+             <!-- Tuner Toggle (Header) -->
+             <button (click)="toggleTuner()" [class.bg-slate-800]="!isTunerOpen()" [class.bg-cyan-600]="isTunerOpen()" [class.text-white]="isTunerOpen()" class="p-2 rounded-lg text-slate-400 hover:text-white transition relative" title="Toggle Tuner">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
-                Export Project
+                @if(isTunerOpen()) { <span class="absolute top-0 right-0 w-2 h-2 bg-white rounded-full animate-ping"></span> }
              </button>
           </div>
         }
       </div>
+
+      <!-- TUNER OVERLAY -->
+      @if (isTunerOpen()) {
+         <div class="absolute top-20 right-6 z-50 w-64 bg-slate-900/90 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-top-4 fade-in duration-300">
+            <div class="flex justify-between items-center mb-4">
+               <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Chromatic Tuner</h3>
+               <button (click)="toggleTuner()" class="text-slate-500 hover:text-white">✕</button>
+            </div>
+            
+            @if (tunerError()) {
+               <div class="text-center py-4">
+                  <div class="text-red-500 text-3xl mb-2">🎤🚫</div>
+                  <p class="text-xs text-red-300 font-medium">{{ tunerError() }}</p>
+                  <button (click)="startTuner()" class="mt-3 text-xs bg-slate-800 text-slate-300 px-3 py-1.5 rounded hover:bg-slate-700">Retry Permission</button>
+               </div>
+            } @else {
+               <div class="flex flex-col items-center justify-center py-2">
+                  <div class="text-5xl font-black text-white mb-1 transition-colors duration-200 min-h-[60px] flex items-center" [class.text-green-400]="isInTune()">
+                     {{ tunerNote() }}
+                  </div>
+                  <div class="text-xs font-mono text-slate-500 mb-4">{{ tunerFrequency() | number:'1.1-1' }} Hz</div>
+                  
+                  <!-- Gauge -->
+                  <div class="relative w-full h-4 bg-slate-800 rounded-full overflow-hidden">
+                     <div class="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_10px_white] transition-all duration-100 ease-linear left-1/2 -translate-x-1/2 z-10"></div>
+                     <!-- Needle -->
+                     <div class="absolute top-0 bottom-0 w-2 h-4 bg-cyan-500 rounded-full transition-all duration-75 ease-out"
+                          [style.left.%]="50 + (tunerCents() / 50) * 50"
+                          [style.transform]="'translateX(-50%)'"
+                          [class.bg-green-500]="isInTune()"
+                          [class.shadow-[0_0_15px_#22c55e]]="isInTune()">
+                     </div>
+                  </div>
+                  <div class="flex justify-between w-full text-[8px] text-slate-500 mt-1 px-1 font-mono">
+                     <span>-50</span>
+                     <span>0</span>
+                     <span>+50</span>
+                  </div>
+               </div>
+            }
+         </div>
+      }
 
       @if (!isStudioMode()) {
         <!-- LANDING / PROJECT SELECTION VIEW -->
@@ -101,9 +144,9 @@ interface SequencerRow {
                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
                  </div>
-                 <h2 class="text-4xl font-bold text-white mb-4">Nonso's Beat Lab</h2>
+                 <h2 class="text-4xl font-bold text-white mb-4">The Lab</h2>
                  <p class="text-slate-400 max-w-lg mx-auto mb-8">
-                    An all-in-one AI production suite. Import audio to separate stems, detect chords, and remix with the built-in sequencer.
+                    All-in-one production suite. Import audio to separate stems, detect chords, and remix with the built-in sequencer.
                  </p>
                  <button (click)="openStudioMode()" class="bg-white text-slate-900 px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition shadow-[0_0_20px_rgba(255,255,255,0.3)]">
                     Enter Studio
@@ -245,20 +288,30 @@ interface SequencerRow {
                  </section>
               }
 
-              <!-- 3. CHORD LAB -->
+              <!-- 3. CHORD LEARNER SECTION -->
               @if (chordData().chords.length > 0) {
-                 <section class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 animate-in slide-in-from-bottom-8 duration-700 delay-100">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                       <div>
-                          <h2 class="text-2xl font-bold text-white flex items-center gap-2">
-                             <span class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-cyan-400 text-sm font-mono border border-slate-700">03</span>
-                             Chord Lab
-                          </h2>
-                          <p class="text-slate-500 text-sm ml-10">Detected Key: <span class="text-cyan-400 font-bold">{{ chordData().key }}</span></p>
+                 <section class="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 animate-in slide-in-from-bottom-8 duration-700 delay-100 flex flex-col md:flex-row gap-8">
+                    
+                    <!-- Left: Controls & Current Chord -->
+                    <div class="flex-1 flex flex-col">
+                       <div class="flex justify-between items-start mb-6">
+                          <div>
+                             <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-cyan-400 text-sm font-mono border border-slate-700">03</span>
+                                Chord Learner
+                             </h2>
+                             <p class="text-slate-500 text-sm ml-10">Detected Key: <span class="text-cyan-400 font-bold">{{ chordData().key }}</span></p>
+                          </div>
+                          
+                          <button (click)="isEditingChords.set(!isEditingChords())" [class.text-cyan-400]="isEditingChords()" class="text-slate-500 hover:text-white transition">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                             </svg>
+                          </button>
                        </div>
 
                        <!-- Tools -->
-                       <div class="flex items-center gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                       <div class="flex items-center gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800 mb-6 self-start">
                           <!-- Transpose -->
                           <div class="flex items-center gap-1 bg-slate-900 rounded-lg p-1">
                              <button (click)="transpose(-1)" class="w-8 h-8 flex items-center justify-center hover:bg-slate-800 rounded text-slate-300 font-bold hover:text-cyan-400 transition">-</button>
@@ -272,49 +325,96 @@ interface SequencerRow {
                           <div class="w-px h-8 bg-slate-800"></div>
 
                           <!-- Instrument -->
-                          <select [(ngModel)]="preferredInstrument" class="bg-slate-900 text-xs text-white border-none rounded-lg py-2 pl-3 pr-8 focus:ring-1 focus:ring-cyan-500">
+                          <select [(ngModel)]="preferredInstrument" class="bg-slate-900 text-xs text-white border-none rounded-lg py-2 pl-3 pr-8 focus:ring-1 focus:ring-cyan-500 cursor-pointer">
                              <option value="Guitar">Guitar</option>
                              <option value="Piano">Piano</option>
                              <option value="Ukulele">Ukulele</option>
                           </select>
+
+                          <div class="w-px h-8 bg-slate-800"></div>
+
+                          <!-- Tuner Button in Tools Area -->
+                          <button (click)="toggleTuner()" [class.text-cyan-400]="isTunerOpen()" class="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-300 px-3 py-2 rounded-lg text-xs font-bold transition border border-transparent hover:border-slate-700">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                             </svg>
+                             Tuner
+                          </button>
+                       </div>
+
+                       <!-- BIG CURRENT CHORD CARD -->
+                       <div class="flex-1 bg-slate-950 rounded-2xl border border-slate-800 p-6 flex flex-col items-center justify-center relative overflow-hidden group">
+                          <div class="absolute inset-0 bg-gradient-to-br from-cyan-900/10 to-transparent"></div>
+                          
+                          @if (getCurrentChord(); as current) {
+                             <span class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-2">Current Chord</span>
+                             <div class="text-7xl font-black text-white mb-4 drop-shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all duration-300 transform scale-100">
+                                {{ current.chord }}
+                             </div>
+                             
+                             <!-- Visual Chord Diagram Generator -->
+                             <div class="w-32 h-32 opacity-80">
+                                <div [innerHTML]="renderChordDiagram(current.chord)"></div>
+                             </div>
+                             
+                             @if (getNextChord(); as next) {
+                                <div class="mt-6 flex items-center gap-2 text-slate-500 text-sm">
+                                   <span>Next:</span>
+                                   <span class="font-bold text-slate-300 bg-slate-900 px-2 py-1 rounded border border-slate-800">{{ next.chord }}</span>
+                                </div>
+                             }
+                          } @else {
+                             <span class="text-slate-600">Waiting for chords...</span>
+                          }
                        </div>
                     </div>
 
-                    <!-- Chord Timeline -->
-                    <div class="relative h-48 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden flex items-center select-none cursor-grab active:cursor-grabbing">
-                       <!-- Playhead Line -->
-                       <div class="absolute left-8 top-0 bottom-0 w-0.5 bg-red-500 z-30 shadow-[0_0_10px_rgba(239,68,68,0.5)]">
-                          <div class="absolute top-0 -left-1.5 text-[8px] bg-red-600 text-white px-1 rounded">NOW</div>
-                       </div>
+                    <!-- Right: Scrolling Lyrics & Chords Timeline -->
+                    <div class="flex-1 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden flex flex-col h-[400px] relative">
+                       <div class="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-slate-950 to-transparent z-10 pointer-events-none"></div>
+                       <div class="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-slate-950 to-transparent z-10 pointer-events-none"></div>
                        
-                       <div class="flex gap-1 absolute left-8 transition-transform duration-100 ease-linear h-full items-center" 
-                            [style.transform]="'translateX(' + (-playbackTime * 60) + 'px)'">
-                          
-                          @for (chord of chordData().chords; track $index) {
-                             <div class="relative group shrink-0 h-full border-l border-slate-800/50 flex flex-col justify-center px-4 hover:bg-white/5 transition" 
-                                  [style.width.px]="chord.duration * 60">
-                                
-                                <!-- Chord Name -->
-                                <span class="text-3xl font-black text-slate-700 group-hover:text-cyan-400 transition-all duration-300 transform group-hover:scale-110 origin-left">
-                                   {{ chord.chord }}
-                                </span>
-                                
-                                <!-- Lyrics if any -->
-                                <span class="text-xs text-slate-500 absolute bottom-4 whitespace-nowrap overflow-visible">
-                                   {{ getLyricForTime(chord.time) }}
-                                </span>
+                       <!-- Header -->
+                       <div class="p-4 border-b border-slate-900 flex justify-between items-center bg-slate-950 z-20">
+                          <span class="text-xs font-bold text-slate-500 uppercase">Live Lyrics</span>
+                          @if(isEditingChords()) {
+                             <button (click)="saveEditedChords()" class="text-xs bg-green-600 text-white px-3 py-1 rounded font-bold hover:bg-green-500 transition">Save Changes</button>
+                          }
+                       </div>
 
-                                <!-- Hover Diagram Mock -->
-                                <div class="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white text-slate-900 p-2 rounded shadow-lg z-20 pointer-events-none">
-                                   <div class="text-[10px] font-bold uppercase mb-1">{{ preferredInstrument }} Chart</div>
-                                   <div class="w-12 h-16 border border-slate-200 bg-slate-50 flex items-center justify-center text-xs text-slate-400">
-                                      [Img]
-                                   </div>
+                       <!-- Scroll Container -->
+                       <div class="flex-1 overflow-y-auto p-6 relative scroll-smooth space-y-8" #lyricsContainer>
+                          @for (lyricLine of chordData().lyrics; track $index) {
+                             <div class="relative pl-4 border-l-2 transition-all duration-300 group"
+                                  [class.border-cyan-500]="isCurrentLyricTime(lyricLine.time)"
+                                  [class.border-slate-800]="!isCurrentLyricTime(lyricLine.time)"
+                                  [class.opacity-40]="!isCurrentLyricTime(lyricLine.time) && !isEditingChords()"
+                                  [class.opacity-100]="isCurrentLyricTime(lyricLine.time) || isEditingChords()">
+                                
+                                <!-- Chords Row -->
+                                <div class="flex gap-4 mb-1 h-6 items-end">
+                                   @for (chord of getChordsForLine(lyricLine.time); track $index) {
+                                      @if (isEditingChords()) {
+                                         <input [(ngModel)]="chord.chord" class="bg-slate-800 text-cyan-400 font-bold text-sm w-12 text-center rounded border border-slate-700 focus:border-cyan-500 focus:outline-none px-1">
+                                      } @else {
+                                         <span class="text-cyan-400 font-bold text-sm bg-slate-900/50 px-1.5 rounded cursor-pointer hover:bg-slate-800 transition"
+                                               (click)="jumpToTime(chord.time)">
+                                            {{ chord.chord }}
+                                         </span>
+                                      }
+                                   }
                                 </div>
+
+                                <!-- Lyrics Row -->
+                                @if (isEditingChords()) {
+                                   <input [(ngModel)]="lyricLine.text" class="w-full bg-transparent text-lg text-white border-b border-dashed border-slate-700 focus:border-cyan-500 focus:outline-none pb-1">
+                                } @else {
+                                   <p class="text-lg text-slate-200 font-medium leading-relaxed">{{ lyricLine.text }}</p>
+                                }
                              </div>
                           }
-                          <!-- End padding -->
-                          <div class="w-[500px]"></div>
+                          <!-- Padding for bottom scrolling -->
+                          <div class="h-32"></div>
                        </div>
                     </div>
                  </section>
@@ -384,13 +484,21 @@ interface SequencerRow {
 export class MusiciansCornerComponent implements OnInit, OnDestroy {
   store = inject(StoreService);
   gemini = inject(GeminiService);
-  sanitizer = inject(DomSanitizer);
+  sanitizer: DomSanitizer = inject(DomSanitizer);
   
   Math = Math; // For template math
 
   // Modes
   isStudioMode = signal(false);
   isAddingSong = signal(false);
+  isEditingChords = signal(false);
+  
+  // Tuner State
+  isTunerOpen = signal(false);
+  tunerError = signal<string | null>(null);
+  tunerNote = signal('--');
+  tunerFrequency = signal(0);
+  tunerCents = signal(0); // -50 to +50
   
   // Inputs
   studioUrlInput = signal('');
@@ -424,6 +532,14 @@ export class MusiciansCornerComponent implements OnInit, OnDestroy {
   private stemBuffers: Map<string, AudioBuffer> = new Map();
   private masterGain: GainNode | null = null;
   
+  // Tuner Refs
+  private tunerCtx: AudioContext | null = null;
+  private tunerAnalyser: AnalyserNode | null = null;
+  private tunerStream: MediaStream | null = null;
+  private tunerRafId: number | null = null;
+
+  @ViewChild('lyricsContainer') private lyricsContainer!: ElementRef;
+  
   // Sequencer Data
   sequencerGrid = signal<SequencerRow[]>([
      { name: 'Kick', color: '#ef4444', steps: Array(16).fill(false) }, // Red
@@ -444,6 +560,7 @@ export class MusiciansCornerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
      this.stopAll();
+     this.stopTuner();
      if (this.audioCtx) {
         this.audioCtx.close();
      }
@@ -456,6 +573,7 @@ export class MusiciansCornerComponent implements OnInit, OnDestroy {
 
   exitStudio() {
      this.stopAll();
+     this.stopTuner();
      this.isStudioMode.set(false);
   }
 
@@ -687,7 +805,27 @@ export class MusiciansCornerComponent implements OnInit, OnDestroy {
         }
         
         this.activeBeatStep.update(s => (s + 1) % 16);
+        this.scrollLyricsToCurrent();
      }, stepTime);
+  }
+
+  jumpToTime(time: number) {
+     this.playbackTime = time;
+     if (this.isPlaying()) {
+        // Restart audio from new position
+        this.startAudioEngine();
+     }
+  }
+
+  private scrollLyricsToCurrent() {
+     if (!this.lyricsContainer) return;
+     // Simple auto-scroll based on percentage of 30s loop
+     // Ideally this finds the active DOM element
+     const el = this.lyricsContainer.nativeElement;
+     const scrollHeight = el.scrollHeight;
+     const target = (this.playbackTime / 30) * scrollHeight;
+     // Smooth catch up
+     el.scrollTo({ top: target - 100, behavior: 'smooth' });
   }
 
   // --- Stem Logic (Updates Audio Graph Live) ---
@@ -729,7 +867,7 @@ export class MusiciansCornerComponent implements OnInit, OnDestroy {
      });
   }
 
-  // --- Music Theory Logic (Transpose) ---
+  // --- Music Theory Logic (Transpose & Chords) ---
   transpose(delta: number) {
      const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
      this.transposeStep += delta;
@@ -756,6 +894,185 @@ export class MusiciansCornerComponent implements OnInit, OnDestroy {
         });
         return { ...data, chords: newChords };
      });
+  }
+
+  getCurrentChord() {
+     const t = this.playbackTime;
+     const chords = this.chordData().chords;
+     // Find the chord that started most recently
+     return chords.filter(c => c.time <= t).sort((a,b) => b.time - a.time)[0] || null;
+  }
+
+  getNextChord() {
+     const t = this.playbackTime;
+     const chords = this.chordData().chords;
+     return chords.find(c => c.time > t) || null;
+  }
+
+  getChordsForLine(lineTime: number): ChordEvent[] {
+     // Get chords that happen within a 4-second window of this line
+     const chords = this.chordData().chords;
+     return chords.filter(c => c.time >= lineTime && c.time < lineTime + 4);
+  }
+
+  isCurrentLyricTime(time: number): boolean {
+     return this.playbackTime >= time && this.playbackTime < time + 4;
+  }
+
+  saveEditedChords() {
+     this.isEditingChords.set(false);
+     // In a real app, this would sync back to DB or local storage
+  }
+
+  renderChordDiagram(chordName: string): SafeHtml {
+     // Simple SVG generator based on hashing the chord name to create consistent "patterns"
+     // In a production app, use VexFlow or pre-rendered SVGs
+     const cleanName = chordName.replace('#', 's').replace('/', '_');
+     const seed = cleanName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+     
+     // Determine number of strings based on instrument
+     const strings = this.preferredInstrument === 'Ukulele' ? 4 : 6;
+     const frets = 4;
+     const width = 100;
+     const height = 120;
+     const stringSpacing = width / (strings - 1);
+     const fretSpacing = height / frets;
+
+     let svg = `<svg viewBox="0 0 ${width + 20} ${height + 20}" xmlns="http://www.w3.org/2000/svg">`;
+     
+     // Nut
+     svg += `<line x1="10" y1="10" x2="${width+10}" y2="10" stroke="white" stroke-width="4" />`;
+
+     // Strings
+     for (let i = 0; i < strings; i++) {
+        svg += `<line x1="${10 + i * stringSpacing}" y1="10" x2="${10 + i * stringSpacing}" y2="${height+10}" stroke="#94a3b8" stroke-width="1" />`;
+     }
+
+     // Frets
+     for (let i = 1; i <= frets; i++) {
+        svg += `<line x1="10" y1="${10 + i * fretSpacing}" x2="${width+10}" y2="${10 + i * fretSpacing}" stroke="#475569" stroke-width="1" />`;
+     }
+
+     // Dots (Pseudo-random based on chord name for demo)
+     // Generate 2-3 dots
+     const numDots = (seed % 3) + 2; 
+     for (let k = 0; k < numDots; k++) {
+        const sIndex = (seed + k) % strings;
+        const fIndex = (seed * k) % frets; // 0 means open string technically, but visually lets put it on fret 1-4
+        const cx = 10 + sIndex * stringSpacing;
+        const cy = 10 + (fIndex * fretSpacing) + (fretSpacing / 2);
+        svg += `<circle cx="${cx}" cy="${cy}" r="6" fill="#22d3ee" />`;
+     }
+
+     svg += `</svg>`;
+     return this.sanitizer.bypassSecurityTrustHtml(svg);
+  }
+
+  // --- Tuner Logic ---
+  async toggleTuner() {
+     if (this.isTunerOpen()) {
+        this.stopTuner();
+     } else {
+        await this.startTuner();
+     }
+  }
+
+  async startTuner() {
+     this.tunerError.set(null);
+     try {
+        this.tunerStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.tunerCtx = new AudioContext();
+        const source = this.tunerCtx.createMediaStreamSource(this.tunerStream);
+        this.tunerAnalyser = this.tunerCtx.createAnalyser();
+        this.tunerAnalyser.fftSize = 2048;
+        source.connect(this.tunerAnalyser);
+        
+        this.isTunerOpen.set(true);
+        this.detectPitch();
+     } catch (err) {
+        console.error('Tuner access denied', err);
+        this.tunerError.set('Microphone access denied. Please check settings.');
+        this.isTunerOpen.set(true); // Open to show error
+     }
+  }
+
+  stopTuner() {
+     this.isTunerOpen.set(false);
+     if (this.tunerRafId) cancelAnimationFrame(this.tunerRafId);
+     this.tunerStream?.getTracks().forEach(t => t.stop());
+     this.tunerCtx?.close();
+     this.tunerCtx = null;
+  }
+
+  detectPitch() {
+     if (!this.tunerAnalyser || !this.isTunerOpen()) return;
+
+     const bufferLength = this.tunerAnalyser.fftSize;
+     const buffer = new Float32Array(bufferLength);
+     this.tunerAnalyser.getFloatTimeDomainData(buffer);
+
+     // Basic Autocorrelation for pitch detection
+     const autoCorrelate = (buf: Float32Array, sampleRate: number) => {
+        let size = buf.length;
+        let rms = 0;
+        for (let i = 0; i < size; i++) {
+           const val = buf[i];
+           rms += val * val;
+        }
+        rms = Math.sqrt(rms / size);
+        if (rms < 0.01) return -1; // Signal too low
+
+        let r1 = 0, r2 = size - 1, thres = 0.2;
+        for (let i = 0; i < size / 2; i++) {
+           if (Math.abs(buf[i]) < thres) { r1 = i; break; }
+        }
+        for (let i = 1; i < size / 2; i++) {
+           if (Math.abs(buf[size - i]) < thres) { r2 = size - i; break; }
+        }
+        
+        buf = buf.slice(r1, r2);
+        size = buf.length;
+
+        const c = new Array(size).fill(0);
+        for (let i = 0; i < size; i++) {
+           for (let j = 0; j < size - i; j++) {
+              c[i] = c[i] + buf[j] * buf[j + i];
+           }
+        }
+        
+        let d = 0; 
+        while (c[d] > c[d + 1]) d++;
+        let maxval = -1, maxpos = -1;
+        for (let i = d; i < size; i++) {
+           if (c[i] > maxval) {
+              maxval = c[i];
+              maxpos = i;
+           }
+        }
+        
+        let T0 = maxpos;
+        return sampleRate / T0;
+     };
+
+     const freq = autoCorrelate(buffer, this.tunerCtx!.sampleRate);
+     
+     if (freq !== -1 && freq > 50 && freq < 2000) {
+        this.tunerFrequency.set(freq);
+        const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const noteNum = 12 * (Math.log(freq / 440) / Math.log(2)) + 69;
+        const note = Math.round(noteNum);
+        const noteName = noteStrings[note % 12];
+        const cents = Math.floor((noteNum - note) * 100);
+        
+        this.tunerNote.set(noteName);
+        this.tunerCents.set(cents);
+     }
+
+     this.tunerRafId = requestAnimationFrame(() => this.detectPitch());
+  }
+
+  isInTune() {
+     return Math.abs(this.tunerCents()) < 5 && this.tunerFrequency() > 0;
   }
 
   // --- Sequencer Logic ---
