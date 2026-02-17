@@ -1,7 +1,5 @@
 {
   "name": "ChordFlow",
   "description": "A comprehensive platform for Music teams to manage setlists, tracks, communication, and logistics.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
+  "requestFramePermissions": []
 }

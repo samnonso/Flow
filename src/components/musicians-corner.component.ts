@@ -80,14 +80,6 @@ interface SequencerRow {
                    {{ formatTime(playbackTime) }}
                 </div>
              </div>
-
-             <!-- Tuner Toggle (Header) -->
-             <button (click)="toggleTuner()" [class.bg-slate-800]="!isTunerOpen()" [class.bg-cyan-600]="isTunerOpen()" [class.text-white]="isTunerOpen()" class="p-2 rounded-lg text-slate-400 hover:text-white transition relative" title="Toggle Tuner">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                </svg>
-                @if(isTunerOpen()) { <span class="absolute top-0 right-0 w-2 h-2 bg-white rounded-full animate-ping"></span> }
-             </button>
           </div>
         }
       </div>
@@ -129,6 +121,10 @@ interface SequencerRow {
                      <span>0</span>
                      <span>+50</span>
                   </div>
+                  
+                  @if(!tunerStream) {
+                     <p class="text-[10px] text-slate-500 mt-4 animate-pulse">Waiting for audio...</p>
+                  }
                </div>
             }
          </div>
@@ -991,7 +987,8 @@ export class MusiciansCornerComponent implements OnInit, OnDestroy {
         this.detectPitch();
      } catch (err) {
         console.error('Tuner access denied', err);
-        this.tunerError.set('Microphone access denied. Please check settings.');
+        // More descriptive error handling for common iframe/policy issues
+        this.tunerError.set('Microphone access denied. Please check browser permissions.');
         this.isTunerOpen.set(true); // Open to show error
      }
   }
@@ -1002,6 +999,7 @@ export class MusiciansCornerComponent implements OnInit, OnDestroy {
      this.tunerStream?.getTracks().forEach(t => t.stop());
      this.tunerCtx?.close();
      this.tunerCtx = null;
+     this.tunerStream = null;
   }
 
   detectPitch() {
