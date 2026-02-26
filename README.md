@@ -44,7 +44,7 @@
 - **Stem Mixer**: Visual audio mixer for backing tracks.
 - **Tuner**: Integrated chromatic tuner using the Web Audio API.
 
-### 🤖 Worship Assistant
+### 🤖 Music Assistant
 - Built on `gemini-2.5-flash`.
 - Capable of parsing unstructured chat dumps to create calendar events and setlists.
 - Suggests songs based on thematic keywords.
