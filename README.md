@@ -1,7 +1,7 @@
 
 # ChordFlow
 
-**ChordFlow** is the operating system for modern worship teams. It combines logistics, music production, and communication into a single, "vibe-coded" platform powered by Google Gemini AI.
+**ChordFlow** is the operating system for modern music teams. It combines logistics, music production, and communication into a single, "vibe-coded" platform powered by Google Gemini AI.
 
 ## 📚 Documentation
 
